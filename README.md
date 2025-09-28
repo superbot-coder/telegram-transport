@@ -40,4 +40,6 @@ Telegram Transport
   show('ExceptionMessage: ' + ITelegaTransport.ExceptionMessage);
   show('params: ' + ITelegaTransport.Params.Text);
 ```
-
+#### Telegram channel: https://t.me/delphi_solutions
+#### Telegram chat: https://t.me/delphi_solutions_chat
+#### Telegram video: https://t.me/delphi_solutions_video
