@@ -1,6 +1,6 @@
 # Exsample telegram-transport
 Telegram Transport
-#### [RU] Это unit TelegramTransport.pas В котором реализованы два метода для телеграмм бота SendTelegramMessage и DeleteTelegramMessage отправка сообщени и удаление сообщенияИдея в том чтобы эти методы реализовать в ввиде интерфейса (Interface)
+#### [RU] Это unit TelegramTransport.pas В котором реализованы два метода для телеграмм бота SendTelegramMessage и DeleteTelegramMessage отправка сообщени и удаление сообщения. Идея в том чтобы эти методы реализовать в ввиде интерфейса (Interface)
 
 #### [EN] Telegram Transport is a unit of TelegramTransport.pas, which implements two methods for telegram bots SendTelegramMessage and DeleteTelegramMessage sending a message and deleting a message. The idea is to implement these methods in the Interface view. 
 
