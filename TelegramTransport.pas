@@ -1,4 +1,4 @@
-unit TelegramTransport;
+﻿unit TelegramTransport;
 
 interface
 
@@ -87,6 +87,7 @@ end;
 constructor TTelegramTransport.Create;
 begin
   inherited Create;
+  FJSONValue := Nil;
   FParams := TStringList.Create;
   FHTTPClient := THTTPClient.Create;
   FHTTPClient.ResponseTimeout := 2000;
@@ -124,6 +125,7 @@ destructor TTelegramTransport.Destroy;
 begin
   FHTTPClient.Free;
   FParams.Free;
+  if Assigned(FJSONValue) then FJSONValue.Free;
   inherited;
 end;
 
@@ -157,7 +159,7 @@ function TTelegramTransport.JSONValue(const AEncoding: TEncoding): TJSONValue;
 var
   LContent: string;
 begin
-  if not(Assigned(FJSONValue)) then
+  if (not Assigned(FJSONValue)) and Assigned(FHTTPResponse) then
   begin
     if Assigned(FHTTPResponse) then
       LContent := FHTTPResponse.ContentAsString.Trim;
