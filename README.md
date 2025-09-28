@@ -1,8 +1,12 @@
 # telegram-transport
 Telegram Transport
-Это unit TelegramTransport.pas В котором реализованы два метода для телеграмм бота SendTelegramMessage и DeleteTelegramMessage отправка сообщени и удаление сообщения
+#### Это unit TelegramTransport.pas В котором реализованы два метода для телеграмм бота SendTelegramMessage и DeleteTelegramMessage отправка сообщени и удаление сообщения
 Идея в том чтобы эти методы реализовать в ввиде интерфейса (Interface)
 Использовал: Delphi RAD 12.1
+
+#### [en] Telegram Transport is a unit of TelegramTransport.pas, which implements two methods for telegram bots SendTelegramMessage and DeleteTelegramMessage sending a message and deleting a message. 
+The idea is to implement these methods in the Interface view Using: 
+Delphi RAD 12.1
 
 ## Пример использования:
 ```pascal
@@ -23,6 +27,8 @@ Telegram Transport
   show('ExceptionMessage: ' + ITelegaTransport.ExceptionMessage);
   show('------------------------------------------------------------');
   // Delete Telegram Message
+  // Обратите внимание, что Token и ChatID уже добавлены
+  // Please note that the Token and ChatId have already been added.
   if ITelegaTransport.BaseURL(UrlDelete)
                      .MessageID(MsgID)
                      .DeleteTelegramMessage
