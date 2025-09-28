@@ -97,18 +97,20 @@ begin
   Result := false;
   var LURL := Format(FURL, [FToken]);
 
-  // Параметры запроса
+  // РџР°СЂР°РјРµС‚СЂС‹ Р·Р°РїСЂРѕСЃР°
   FParams.Clear;
   FParams.AddPair('chat_id', FChatID.ToString);
   FParams.AddPair('message_id', FMessageID.ToString);
 
-  // Отправка запроса
+  // РћС‚РїСЂР°РІРєР° Р·Р°РїСЂРѕСЃР°
   try
+    FreeAndNil(FJSONValue);
     FHTTPResponse := FHTTPClient.Post(LURL, FParams);
-    // Обработка ответа
+    // РћР±СЂР°Р±РѕС‚РєР° РѕС‚РІРµС‚Р°
+
     if FHTTPResponse.StatusCode = 200 then
     begin
-      var JSONResponse := JSONValue;
+      var JSONResponse := Self.JSONValue;
       GetMessageValue<Boolean>('ok', JSONResponse);
     end;
   except
@@ -202,21 +204,22 @@ function TTelegramTransport.SendTelegramMessage: Int64;
 begin
   Result := 0;
 
-  // Формируем URL запроса
+  // Р¤РѕСЂРјРёСЂСѓРµРј URL Р·Р°РїСЂРѕСЃР°
   var LURL := Format(FURL, [FToken]);
 
 
-  // Добавляем параметры запроса
+  // Р”РѕР±Р°РІР»СЏРµРј РїР°СЂР°РјРµС‚СЂС‹ Р·Р°РїСЂРѕСЃР°
   FParams.Clear;
   FParams.AddPair('chat_id', FChatID.ToString);
   FParams.AddPair('text', FMessage);
-  // Можно добавить parse_mode для форматирования:
+  // РњРѕР¶РЅРѕ РґРѕР±Р°РІРёС‚СЊ parse_mode РґР»СЏ С„РѕСЂРјР°С‚РёСЂРѕРІР°РЅРёСЏ:
   FParams.AddPair('parse_mode', 'MarkdownV2');
 
-  // Отправляем POST-запрос
+  // РћС‚РїСЂР°РІР»СЏРµРј POST-Р·Р°РїСЂРѕСЃ
   try
+    FreeAndNil(FJSONValue);
     FHTTPResponse := FHTTPClient.Post(LURL, FParams);
-    var JSONResponse := JSONValue;
+    var JSONResponse := self.JSONValue;
 
     if GetMessageValue<Boolean>('ok', JSONResponse) then
     begin
