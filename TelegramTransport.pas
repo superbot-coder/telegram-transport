@@ -3,6 +3,7 @@
 interface
 
 USES
+   Vcl.Dialogs,
    System.SysUtils, System.Classes, System.JSON, System.Net.HttpClient;
 
 type
@@ -25,6 +26,7 @@ type
     procedure SetMessageID(AMessageID: Int64);
     property ExceptionMessage: string read GetExceptionMessage;
     property Params: TStringList read GetParam;
+    function AddParam(const AName, AValue: string): ITelegramTransport;
   end;
 
   TTelegramTransport = class(TInterfacedObject, ITelegramTransport)
@@ -42,6 +44,7 @@ type
     FStatusCode: integer;
     FExceptionMessage: string;
     FJSONValue: TJSONValue;
+    function AddParam(const AName, AValue: string): ITelegramTransport;
     function GetMessageId: int64;
     procedure SetMessageID(AMessageID: Int64);
     function GetMessageValue<T>(const ValueName: string; JSV: TJSONValue): T;
@@ -69,6 +72,22 @@ type
   end;
 
 implementation
+
+function TTelegramTransport.AddParam(const AName,
+  AValue: string): ITelegramTransport;
+begin
+  Result := self;
+  if (AName.Trim.IsEmpty) or (AValue.Trim.IsEmpty) then
+    Exit;
+  var pos := FParams.IndexOf(AName);
+  if pos = -1 then
+    FParams.AddPair(AName.Trim, AValue)
+  else
+  begin
+    FParams.Delete(pos);
+    FParams.AddPair(AName.Trim, AValue);
+  end;
+end;
 
 { TTelegramTranport }
 
@@ -125,7 +144,8 @@ destructor TTelegramTransport.Destroy;
 begin
   FHTTPClient.Free;
   FParams.Free;
-  if Assigned(FJSONValue) then FJSONValue.Free;
+  if Assigned(FJSONValue) then
+    FJSONValue.Free;
   inherited;
 end;
 
@@ -161,14 +181,18 @@ var
 begin
   if (not Assigned(FJSONValue)) and Assigned(FHTTPResponse) then
   begin
-    if Assigned(FHTTPResponse) then
-      LContent := FHTTPResponse.ContentAsString.Trim;
-    if LContent.StartsWith('{') then
-      FJSONValue := (TJSONObject.ParseJSONValue(AEncoding.GetBytes(LContent), 0) as TJSONObject)
-    else if LContent.StartsWith('[') then
-      FJSONValue := (TJSONObject.ParseJSONValue(AEncoding.GetBytes(LContent), 0) as TJSONArray)
-    else
-      raise Exception.Create('The return content is not a valid JSON value.');
+    LContent := FHTTPResponse.ContentAsString.Trim;
+    var JSV :=  TJSONObject.ParseJSONValue(AEncoding.GetBytes(LContent), 0);
+    if Assigned(JSV) then
+      if JSV is TJSONObject then
+        FJSONValue := JSV as TJSONObject
+      else
+      begin
+        JSV.Free;
+        raise Exception.Create('The return content is not a valid TJSONObject value.');
+      end
+	else
+      raise Exception.Create('The return content is not a valid JSON value.');  
   end;
   Result := FJSONValue;
 end;
