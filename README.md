@@ -15,7 +15,7 @@ Telegram Transport
                           .BaseURL(UrlSendMessage)
                           .Token('qweqwewerwerwe')
                           .ChatID('1233456')
-                          .MessageText('Hello word');
+                          .MessageText(mmMessage.Text);
 
   var MsgID := ITelegaTransport.SendTelegramMessage;
 
@@ -44,6 +44,8 @@ Telegram Transport
   if Assigned(ITelegaTransport.JSONValue) then
     show('JSON: ' + ITelegaTransport.JSONValue.ToString);
 ```
+![Screenshot](https://github.com/superbot-coder/telegram-transport/blob/main/images/image-01.png "")
+
 ##### Telegram channel: https://t.me/delphi_solutions
 ##### Telegram chat: https://t.me/delphi_solutions_chat
 ##### Telegram video: https://t.me/delphi_solutions_video

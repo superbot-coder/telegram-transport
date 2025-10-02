@@ -12,22 +12,20 @@ type
     function ChatID(AChatID: Int64): ITelegramTransport; overload;
     function ChatID(AChatID: string): ITelegramTransport; overload;
     function DeleteTelegramMessage: Boolean;
-    function GetExceptionMessage: string;
     function GetMessageId: int64;
-    function GetParam: TStringList;
     function JSONValue(const AEncoding: TEncoding): TJSONValue; overload;
     function JSONValue: TJSONValue; overload;
     function MessageID(AMessageID: Int64): ITelegramTransport; overload;
     function MessageID(AMessageID: String): ITelegramTransport; overload;
-    function MessageText(const  AMessage: string): ITelegramTransport;
+    function MessageText(const AMessage: string): ITelegramTransport;
     function ResponseContent: string;
     function SendTelegramMessage: Int64;
     function StatusCode: Integer;
     function Token(const AToken: string): ITelegramTransport;
-    procedure SetMessageID(AMessageID: Int64);
-    property ExceptionMessage: string read GetExceptionMessage;
-    property Params: TStringList read GetParam;
+    function ExceptionMessage: string;
+    function Params: TStringList;
     function AddParam(const AName, AValue: string): ITelegramTransport;
+    procedure DeleteParam(const ParamName: string);
   end;
 
   TTelegramTransport = class(TInterfacedObject, ITelegramTransport)
@@ -36,10 +34,10 @@ type
     FHTTPResponse: IHTTPResponse;
     FURL: string;
     FToken: String;
-    FChatID: String;
-    FMessageID: String;
+    //FChatID: String;
+    //FMessageID: String;
     FParams: TStringList;
-    FMessage: String;
+    //FMessage: String;
     FLastResult: Boolean;
     FRespString: String;
     FStatusCode: integer;
@@ -47,10 +45,10 @@ type
     FJSONValue: TJSONValue;
     function AddParam(const AName, AValue: string): ITelegramTransport;
     function GetMessageID: int64;
-    procedure SetMessageID(AMessageID: Int64);
-    function GetMessageValue<T>(const ValueName: string; JSV: TJSONValue): T;
-    function GetParam: TStringList;
-    function GetExceptionMessage: string;
+    function GetJSONValue<T>(const ValueName: string; JSV: TJSONValue): T;
+    function Params: TStringList;
+    procedure DeleteParam(const ParamName: string);
+    function ExceptionMessage: string;
     function BaseURL(const URL: String): ITelegramTransport;
     function Token(const AToken: string): ITelegramTransport;
     function ChatID(AChatID: Int64): ITelegramTransport; overload;
@@ -103,12 +101,13 @@ end;
 function TTelegramTransport.ChatID(AChatID: Int64): ITelegramTransport;
 begin
   Result := Self;
-  FChatID := AChatID.ToString;
+  AddParam('chat_id', AChatID.ToString);
 end;
 
 function TTelegramTransport.ChatID(AChatID: string): ITelegramTransport;
 begin
-  FChatID := AChatID.Trim;
+  Result := Self;
+  AddParam('chat_id', AChatID);
 end;
 
 constructor TTelegramTransport.Create;
@@ -125,21 +124,16 @@ begin
   Result := false;
   var LURL := Format(FURL, [FToken]);
 
-  // Параметры запроса
-  FParams.Clear;
-  FParams.AddPair('chat_id', FChatID);
-  FParams.AddPair('message_id', FMessageID);
-
-  // Отправка запроса
+ // Отправка запроса
   try
     FreeAndNil(FJSONValue);
     FHTTPResponse := FHTTPClient.Post(LURL, FParams);
-    // Обработка ответа
 
+    // Обработка ответа
     if FHTTPResponse.StatusCode = 200 then
     begin
-      var JSONResponse := Self.JSONValue;
-      Result := GetMessageValue<Boolean>('ok', JSONResponse);
+      var JSONValueResp := JSONValue;
+      Result := GetJSONValue<Boolean>('ok', JSONValue);
     end;
   except
     on E: Exception do
@@ -157,25 +151,41 @@ begin
   inherited;
 end;
 
-function TTelegramTransport.GetExceptionMessage: string;
+function TTelegramTransport.ExceptionMessage: string;
 begin
   Result := FExceptionMessage;
 end;
 
 function TTelegramTransport.GetMessageId: int64;
 begin
-  Result := FMessageID.ToInt64;
+  Result := 0;
+  var JSONValueResp := JSONValue;
+  if Not Assigned(JSONValueResp) then
+    Exit;
+
+  if GetJSONValue<Boolean>('ok', JSONValueResp) then
+  begin
+    var MsgObj := GetJSONValue<TJSONValue>('result', JSONValueResp);
+    Result := GetJSONValue<Int64>('message_id', MsgObj);
+  end;
 end;
 
-function TTelegramTransport.GetMessageValue<T>(const ValueName: string; JSV: TJSONValue): T;
+function TTelegramTransport.GetJSONValue<T>(const ValueName: string; JSV: TJSONValue): T;
 begin
   if JSV is TJSONObject then
     TJSONObject(JSV).TryGetValue<T>(ValueName, Result);
 end;
 
-function TTelegramTransport.GetParam: TStringList;
+function TTelegramTransport.Params: TStringList;
 begin
   Result := FParams;
+end;
+
+procedure TTelegramTransport.DeleteParam(const ParamName: string);
+begin
+  var x := FParams.IndexOf(ParamName.Trim);
+  if x <> -1 then
+    FParams.Delete(x);
 end;
 
 function TTelegramTransport.StatusCode: integer;
@@ -213,19 +223,20 @@ end;
 function TTelegramTransport.MessageID(AMessageID: Int64): ITelegramTransport;
 begin
   Result := Self;
-  FMessageID := AMessageID.ToString;
+  AddParam('message_id', AMessageID.ToString);
 end;
 
 function TTelegramTransport.MessageID(AMessageID: String): ITelegramTransport;
 begin
-  FMessageID := AMessageID.Trim;
+  Result := Self;
+  AddParam('message_id', AMessageID);
 end;
 
 function TTelegramTransport.MessageText(
   const AMessage: string): ITelegramTransport;
 begin
   Result := Self;
-  FMessage := AMessage;
+  AddParam('text', AMessage);
 end;
 
 class function TTelegramTransport.New: ITelegramTransport;
@@ -247,9 +258,6 @@ begin
   var LURL := Format(FURL, [FToken]);
 
   // Добавляем параметры запроса
-  FParams.Clear;
-  FParams.AddPair('chat_id', FChatID);
-  FParams.AddPair('text', FMessage);
   // Можно добавить parse_mode для форматирования:
   // Но не нужно
   // FParams.AddPair('parse_mode', 'MarkdownV2');
@@ -258,13 +266,11 @@ begin
   try
     FreeAndNil(FJSONValue);
     FHTTPResponse := FHTTPClient.Post(LURL, FParams);
-    var JSONResponse := self.JSONValue;
 
-    if GetMessageValue<Boolean>('ok', JSONResponse) then
+    if FHTTPResponse.StatusCode = 200 then
     begin
-      var MessageObj := GetMessageValue<TJSONValue>('result', JSONResponse);
-      FMessageID := GetMessageValue<string>('message_id', MessageObj);
-      Result := FMessageID.ToInt64;
+      Result := GetMessageID;
+      DeleteParam('text');
     end;
 
   except
@@ -272,11 +278,6 @@ begin
       FExceptionMessage := E.Message;
   end;
 
-end;
-
-procedure TTelegramTransport.SetMessageID(AMessageID: Int64);
-begin
-  FMessageID := AMessageID.ToString;
 end;
 
 function TTelegramTransport.Token(const AToken: string): ITelegramTransport;
