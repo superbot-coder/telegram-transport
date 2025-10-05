@@ -34,13 +34,9 @@ type
     FHTTPResponse: IHTTPResponse;
     FURL: string;
     FToken: String;
-    //FChatID: String;
-    //FMessageID: String;
     FParams: TStringList;
-    //FMessage: String;
     FLastResult: Boolean;
     FRespString: String;
-    FStatusCode: integer;
     FExceptionMessage: string;
     FJSONValue: TJSONValue;
     function AddParam(const AName, AValue: string): ITelegramTransport;
@@ -127,6 +123,7 @@ begin
  // Отправка запроса
   try
     FreeAndNil(FJSONValue);
+    FExceptionMessage := '';
     FHTTPResponse := FHTTPClient.Post(LURL, FParams);
 
     // Обработка ответа
@@ -159,15 +156,13 @@ end;
 function TTelegramTransport.GetMessageId: int64;
 begin
   Result := 0;
-  var JSONValueResp := JSONValue;
-  if Not Assigned(JSONValueResp) then
-    Exit;
-
-  if GetJSONValue<Boolean>('ok', JSONValueResp) then
-  begin
-    var MsgObj := GetJSONValue<TJSONValue>('result', JSONValueResp);
-    Result := GetJSONValue<Int64>('message_id', MsgObj);
-  end;
+  var JSVResp := JSONValue;
+  if Assigned(JSVResp) then
+    if GetJSONValue<Boolean>('ok', JSVResp) then
+    begin
+      var MsgObj := GetJSONValue<TJSONValue>('result', JSVResp);
+      Result := GetJSONValue<Int64>('message_id', MsgObj);
+    end;
 end;
 
 function TTelegramTransport.GetJSONValue<T>(const ValueName: string; JSV: TJSONValue): T;
@@ -190,7 +185,9 @@ end;
 
 function TTelegramTransport.StatusCode: integer;
 begin
-  Result := FHTTPResponse.StatusCode;
+  Result := 0;
+  if Assigned(FHTTPResponse) then
+    Result := FHTTPResponse.StatusCode;
 end;
 
 function TTelegramTransport.JSONValue(const AEncoding: TEncoding): TJSONValue;
@@ -203,14 +200,14 @@ begin
     var JSV :=  TJSONObject.ParseJSONValue(AEncoding.GetBytes(LContent), 0);
     if Assigned(JSV) then
       if JSV is TJSONObject then
-        FJSONValue := JSV as TJSONObject
+        FJSONValue := JSV
       else
       begin
         JSV.Free;
         raise Exception.Create('The return content is not a valid TJSONObject value.');
       end
 	else
-      raise Exception.Create('The return content is not a valid JSON value.');  
+    raise Exception.Create('The return content is not a valid JSON value.');
   end;
   Result := FJSONValue;
 end;
@@ -246,8 +243,9 @@ end;
 
 function TTelegramTransport.ResponseContent: string;
 begin
+  Result := '';
   if Assigned(FHTTPResponse) then
-    Result := FHTTPResponse.ContentAsString()
+    Result := FHTTPResponse.ContentAsString;
 end;
 
 function TTelegramTransport.SendTelegramMessage: Int64;
@@ -265,13 +263,11 @@ begin
   // Отправляем POST-запрос
   try
     FreeAndNil(FJSONValue);
+    FExceptionMessage := '';
     FHTTPResponse := FHTTPClient.Post(LURL, FParams);
 
     if FHTTPResponse.StatusCode = 200 then
-    begin
       Result := GetMessageID;
-      DeleteParam('text');
-    end;
 
   except
     on E: Exception do
